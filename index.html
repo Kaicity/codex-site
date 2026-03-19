@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Cars Visualization</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+  </head>
+  <body>
+    <h2>Cars Data Visualization</h2>
+
+    <div class="controls">
+      <div>
+        <h4>Attributes</h4>
+        <div class="panel">
+          <label><input type="checkbox" value="MPG" checked /> MPG</label>
+          <label><input type="checkbox" value="Cylinders" /> Cylinders</label>
+          <label
+            ><input type="checkbox" value="Displacement" /> Displacement</label
+          >
+          <label
+            ><input type="checkbox" value="Horsepower" checked />
+            Horsepower</label
+          >
+          <label><input type="checkbox" value="Weight" /> Weight</label>
+          <label
+            ><input type="checkbox" value="Acceleration" /> Acceleration</label
+          >
+        </div>
+      </div>
+
+      <div>
+        <h4>Target</h4>
+        <div class="panel">
+          <label
+            ><input type="radio" name="target" value="Manufacturer" checked />
+            Manufacturer</label
+          >
+          <label
+            ><input type="radio" name="target" value="Origin" /> Origin</label
+          >
+        </div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div id="scatterChart" class="chart"></div>
+      <div id="barChart" class="chart"></div>
+      <div id="parallelChart" class="chart"></div>
+      <div id="pieChart" class="chart"></div>
+    </div>
+
+    <script src="main.js"></script>
+  </body>
+</html>
