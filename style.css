@@ -70,7 +70,7 @@ h2 {
 }
 
 .reset {
-  background-color: gray;
+  background-color: darkgray;
   border-radius: 10px;
   padding: 14px;
   color: white;
@@ -97,8 +97,8 @@ h2 {
 }
 
 .chart-controls button {
-  width: 30px;
-  height: 30px;
+  width: 35px;
+  height: 35px;
   border-radius: 5px;
   border: none;
   background: seagreen;
@@ -114,4 +114,21 @@ h2 {
 
 .chart-controls button:active {
   transform: scale(0.9);
+}
+
+.attr-item {
+  cursor: pointer;
+  padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.attr-item.active {
+  background: #007bff;
+  color: white;
+}
+
+.order {
+  font-weight: bold;
+  margin-left: 5px;
 }

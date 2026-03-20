@@ -13,16 +13,19 @@
     <div class="controls">
       <div>
         <h4>Attributes</h4>
-        <div class="panel">
-          <label><input type="checkbox" value="MPG" checked /> MPG</label>
-          <label
-            ><input type="checkbox" value="Horsepower" checked />
-            Horsepower</label
-          >
-          <label><input type="checkbox" value="Weight" /> Weight</label>
-          <label
-            ><input type="checkbox" value="Acceleration" /> Acceleration</label
-          >
+        <div class="panel attributes">
+          <div class="attr-item" data-value="MPG">
+            MPG <span class="order"></span>
+          </div>
+          <div class="attr-item" data-value="Horsepower">
+            Horsepower <span class="order"></span>
+          </div>
+          <div class="attr-item" data-value="Weight">
+            Weight <span class="order"></span>
+          </div>
+          <div class="attr-item" data-value="Acceleration">
+            Acceleration <span class="order"></span>
+          </div>
         </div>
       </div>
 
@@ -38,11 +41,6 @@
           >
         </div>
       </div>
-
-      <div>
-        <h4>Control</h4>
-        <button class="reset">Reset</button>
-      </div>
     </div>
 
     <div class="grid">
@@ -54,7 +52,7 @@
         <div id="scatterChart" class="chart"></div>
       </div>
 
-      <div class="chart-wrapper">
+      <div class="chart-wrapper" id="barWrapper">
         <div class="chart-controls">
           <button class="zoom-in">+</button>
           <button class="zoom-out">-</button>
@@ -70,7 +68,7 @@
         <div id="parallelChart" class="chart"></div>
       </div>
 
-      <div class="chart-wrapper">
+      <div class="chart-wrapper" id="pieWrapper">
         <div class="chart-controls">
           <button class="zoom-in">+</button>
           <button class="zoom-out">-</button>
