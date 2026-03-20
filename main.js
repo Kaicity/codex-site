@@ -2,7 +2,7 @@ const width = 850;
 const height = 400;
 
 // ===== STATE =====
-let selectedAttrs = ["MPG", "Horsepower"];
+let selectedDefaultAttrs = ["MPG", "Horsepower"]; // State ban dau
 let target = "Manufacturer";
 
 const color = d3.scaleOrdinal(d3.schemeTableau10);
@@ -26,9 +26,9 @@ d3.csv("a1-cars.csv").then((data) => {
     const val = this.value;
 
     if (this.checked) {
-      if (!selectedAttrs.includes(val)) selectedAttrs.push(val);
+      if (!selectedDefaultAttrs.includes(val)) selectedDefaultAttrs.push(val);
     } else {
-      selectedAttrs = selectedAttrs.filter((d) => d !== val);
+      selectedDefaultAttrs = selectedDefaultAttrs.filter((d) => d !== val);
     }
 
     renderAll();
@@ -49,10 +49,10 @@ d3.csv("a1-cars.csv").then((data) => {
 
   // ================= SCATTER =================
   function renderScatter() {
-    if (selectedAttrs.length < 2) return;
+    if (selectedDefaultAttrs.length < 2) return;
 
-    const xAttr = selectedAttrs[1];
-    const yAttr = selectedAttrs[0];
+    const xAttr = selectedDefaultAttrs[1];
+    const yAttr = selectedDefaultAttrs[0];
 
     const margin = { top: 20, right: 20, bottom: 40, left: 50 };
     const innerWidth = width - margin.left - margin.right;
@@ -109,15 +109,13 @@ d3.csv("a1-cars.csv").then((data) => {
       .attr("cy", (d) => y(d[yAttr]))
       .attr("r", 5)
       .attr("fill", (d) => color(d[target]))
-      .attr("opacity", 0.7)
-      .on("mouseover", (e, d) => highlight(d))
-      .on("mouseout", reset);
+      .attr("opacity", 0.7);
 
     // ===== LABEL =====
     svg
       .append("text")
       .attr("x", width / 2)
-      .attr("y", height)
+      .attr("y", height - 8)
       .attr("text-anchor", "middle")
       .text(xAttr);
 
@@ -125,38 +123,50 @@ d3.csv("a1-cars.csv").then((data) => {
       .append("text")
       .attr("transform", "rotate(-90)")
       .attr("x", -height / 2)
-      .attr("y", 15)
+      .attr("y", 18)
       .attr("text-anchor", "middle")
       .text(yAttr);
 
     // ===== ZOOM =====
-    svg.call(
-      d3
-        .zoom()
-        .scaleExtent([1, 5])
-        .translateExtent([
-          [0, 0],
-          [width, height],
-        ])
-        .on("zoom", (event) => {
-          const zx = event.transform.rescaleX(x);
-          const zy = event.transform.rescaleY(y);
+    const zoom = d3
+      .zoom()
+      .scaleExtent([1, 9])
+      .translateExtent([
+        [0, 0],
+        [width, height],
+      ])
+      .on("zoom", (event) => {
+        const zx = event.transform.rescaleX(x);
+        const zy = event.transform.rescaleY(y);
 
-          // update points
-          circles
-            .attr("cx", (d) => zx(d[xAttr]))
-            .attr("cy", (d) => zy(d[yAttr]));
+        circles.attr("cx", (d) => zx(d[xAttr])).attr("cy", (d) => zy(d[yAttr]));
 
-          // update axis
-          gx.call(d3.axisBottom(zx));
-          gy.call(d3.axisLeft(zy));
-        }),
-    );
+        gx.call(d3.axisBottom(zx));
+        gy.call(d3.axisLeft(zy));
+      });
+
+    svg.call(zoom);
+
+    const wrapper = d3.select("#scatterWrapper");
+
+    wrapper
+      .select(".zoom-in")
+      .on("click", null)
+      .on("click", () => {
+        svg.transition().call(zoom.scaleBy, 1.2);
+      });
+
+    wrapper
+      .select(".zoom-out")
+      .on("click", null)
+      .on("click", () => {
+        svg.transition().call(zoom.scaleBy, 0.8);
+      });
   }
 
   // ================= BAR =================
   function renderBar() {
-    const attrs = selectedAttrs.length ? selectedAttrs : ["MPG"];
+    const attrs = selectedDefaultAttrs.length ? selectedDefaultAttrs : ["MPG"];
 
     const grouped = d3.rollups(
       data,
@@ -224,9 +234,7 @@ d3.csv("a1-cars.csv").then((data) => {
       .attr("y", (d) => y(d.value))
       .attr("width", x1.bandwidth())
       .attr("height", (d) => 300 - y(d.value))
-      .attr("fill", (d) => colorAttr(d.key))
-      .on("mouseover", (e, d) => highlightBar(d))
-      .on("mouseout", reset);
+      .attr("fill", (d) => colorAttr(d.key));
 
     // ===== AXIS X =====
     svg
@@ -273,21 +281,13 @@ d3.csv("a1-cars.csv").then((data) => {
 
       g.append("text").attr("x", 15).attr("y", 10).text(attr);
     });
-
-    // ===== HIGHLIGHT =====
-    function highlightBar(d) {
-      svg.selectAll("rect").attr("opacity", (x) => {
-        if (!x || !x.key) return 0.3;
-        return x.key === d.key ? 1 : 0.2;
-      });
-    }
   }
 
   // ================= PARALLEL =================
   function renderParallel() {
-    if (selectedAttrs.length < 2) return;
+    if (selectedDefaultAttrs.length < 2) return;
 
-    const dimensions = selectedAttrs;
+    const dimensions = selectedDefaultAttrs;
 
     const svg = d3
       .select("#parallelChart")
@@ -295,6 +295,9 @@ d3.csv("a1-cars.csv").then((data) => {
       .attr("viewBox", `0 0 ${width} ${height}`)
       .attr("width", "100%")
       .attr("height", "100%");
+
+    // 👉 Tạo group để zoom (rất quan trọng)
+    const g = svg.append("g");
 
     const x = d3.scalePoint().domain(dimensions).range([50, 650]);
 
@@ -310,30 +313,48 @@ d3.csv("a1-cars.csv").then((data) => {
       return d3.line()(dimensions.map((p) => [x(p), y[p](d[p])]));
     }
 
-    svg
-      .selectAll("path")
+    g.selectAll("path")
       .data(data)
       .enter()
       .append("path")
       .attr("d", path)
       .attr("fill", "none")
       .attr("stroke", (d) => color(d[target]))
-      .attr("opacity", 0.3)
-      .on("mouseover", (e, d) => highlight(d))
-      .on("mouseout", reset);
+      .attr("opacity", 0.3);
 
     dimensions.forEach((dim) => {
-      svg
-        .append("g")
+      g.append("g")
         .attr("transform", `translate(${x(dim)},0)`)
         .call(d3.axisLeft(y[dim]));
 
-      svg
-        .append("text")
+      g.append("text")
         .attr("x", x(dim))
         .attr("y", 20)
         .text(dim)
         .attr("text-anchor", "middle");
+    });
+
+    const zoom = d3
+      .zoom()
+      .scaleExtent([0.5, 5])
+      .translateExtent([
+        [0, 0],
+        [width, height],
+      ])
+      .on("zoom", (event) => {
+        g.attr("transform", event.transform);
+      });
+
+    svg.call(zoom);
+
+    const wrapper = d3.select("#parallelWrapper");
+
+    wrapper.select(".zoom-in").on("click", () => {
+      svg.transition().call(zoom.scaleBy, 1.2);
+    });
+
+    wrapper.select(".zoom-out").on("click", () => {
+      svg.transition().call(zoom.scaleBy, 0.8);
     });
   }
 
@@ -366,7 +387,6 @@ d3.csv("a1-cars.csv").then((data) => {
 
     const arc = d3.arc().innerRadius(0).outerRadius(radius);
 
-    // 👉 label nằm hơi ngoài 1 tí
     const labelArc = d3
       .arc()
       .innerRadius(radius * 0.75)
@@ -432,23 +452,11 @@ d3.csv("a1-cars.csv").then((data) => {
     // ===== HIGHLIGHT =====
     function highlightPie(d) {
       const key = d.data[0];
-
       g.selectAll("path").attr("opacity", (x) => (x.data[0] === key ? 1 : 0.2));
-
-      // sync dashboard
-      d3.selectAll("circle").attr("opacity", (x) =>
-        x[target] === key ? 1 : 0.1,
-      );
-
-      d3.selectAll("path").attr("opacity", (x) =>
-        x[target] === key ? 1 : 0.05,
-      );
     }
 
     function resetPie() {
       g.selectAll("path").attr("opacity", 1);
-      d3.selectAll("circle").attr("opacity", 0.7);
-      d3.selectAll("path").attr("opacity", 0.3);
     }
   }
 
@@ -469,17 +477,6 @@ d3.csv("a1-cars.csv").then((data) => {
 
       item.append("span").text(" " + o);
     });
-  }
-
-  // ================= GLOBAL HIGHLIGHT =================
-  function highlight(d) {
-    d3.selectAll("circle").attr("opacity", (x) => (x === d ? 1 : 0.1));
-    d3.selectAll("path").attr("opacity", (x) => (x === d ? 1 : 0.05));
-  }
-
-  function reset() {
-    d3.selectAll("circle").attr("opacity", 0.7);
-    d3.selectAll("path").attr("opacity", 0.3);
   }
 
   // ================= FULLSCREEN =================
