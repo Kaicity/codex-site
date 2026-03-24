@@ -10,7 +10,7 @@ const color = d3.scaleOrdinal(d3.schemeTableau10);
 d3.csv("a1-cars.csv").then((data) => {
   data.forEach((d) => {
     d.MPG = +d.MPG;
-    d.Weight = +d.Weight / 100;
+    d.Weight = +d.Weight;
     d.Horsepower = +d.Horsepower;
     d.Acceleration = +d.Acceleration;
     d["Model Year"] = +d["Model Year"];
@@ -27,10 +27,8 @@ d3.csv("a1-cars.csv").then((data) => {
     const val = d3.select(this).attr("data-value");
 
     if (selectedDefaultAttrs.includes(val)) {
-      // remove
       selectedDefaultAttrs = selectedDefaultAttrs.filter((d) => d !== val);
     } else {
-      // add (giữ thứ tự)
       selectedDefaultAttrs.push(val);
     }
 
@@ -130,6 +128,8 @@ d3.csv("a1-cars.csv").then((data) => {
     // ===== GROUP (CLIPPED) =====
     const g = svg.append("g").attr("clip-path", "url(#clip)");
 
+    const tooltip = d3.select("#tooltip");
+
     const circles = g
       .selectAll("circle")
       .data(data)
@@ -141,8 +141,36 @@ d3.csv("a1-cars.csv").then((data) => {
       .attr("r", 5)
       .attr("fill", (d) => color(d[target]))
       .attr("opacity", 0.7)
-      .on("mouseover", (e, d) => highlightAll(d[target]))
-      .on("mouseout", resetHighlight);
+      .on("mouseover", function (event, d) {
+        highlightAll(d[target]);
+
+        const el = d3.select(this);
+
+        el.raise();
+
+        // delay để tránh override
+        setTimeout(() => {
+          el.attr("fill", "red").attr("stroke", "#000").attr("stroke-width", 2);
+        }, 0);
+
+        tooltip.style("opacity", 1).html(`
+    <strong>${target}:</strong> ${d[target]} <br/>
+    ${xAttr}: ${d[xAttr]} <br/>
+    ${yAttr}: ${d[yAttr]}
+  `);
+      })
+      .on("mousemove", (event) => {
+        tooltip
+          .style("left", event.pageX + 10 + "px")
+          .style("top", event.pageY - 20 + "px");
+      })
+      .on("mouseout", function (event, d) {
+        resetHighlight();
+
+        d3.select(this).attr("fill", color(d[target])).attr("stroke", "none");
+
+        tooltip.style("opacity", 0);
+      });
 
     // ===== LABEL =====
     svg
@@ -206,7 +234,13 @@ d3.csv("a1-cars.csv").then((data) => {
       (v) => {
         const obj = {};
         attrs.forEach((a) => {
-          obj[a] = d3.mean(v, (d) => d[a]);
+          obj[a] = d3.mean(v, (d) => {
+            // chia 100 vs bieu do cot
+            if (a === "Weight") {
+              return d[a] / 100;
+            }
+            return d[a];
+          });
         });
         return obj;
       },
@@ -226,7 +260,6 @@ d3.csv("a1-cars.csv").then((data) => {
       .attr("width", "100%")
       .attr("height", "100%");
 
-    // 👉 Layer để zoom
     const zoomLayer = svg.append("g");
 
     // ===== SCALE =====
@@ -249,6 +282,8 @@ d3.csv("a1-cars.csv").then((data) => {
       .range([300, 20]);
 
     const colorAttr = d3.scaleOrdinal().domain(attrs).range(d3.schemeTableau10);
+
+    const tooltip = d3.select("#tooltip");
 
     // ===== DRAW BAR =====
     zoomLayer
@@ -274,10 +309,31 @@ d3.csv("a1-cars.csv").then((data) => {
       .attr("width", x1.bandwidth())
       .attr("height", (d) => 300 - y(d.value))
       .attr("fill", (d) => colorAttr(d.key))
-      .on("mouseover", (e, d) => {
+      .on("mouseover", function (event, d) {
         highlightAll(d.group);
+
+        const el = d3.select(this);
+
+        el.raise().attr("stroke", "#000").attr("stroke-width", 2);
+
+        tooltip.style("opacity", 1).html(`
+      <strong>${target}:</strong> ${d.group} <br/>
+      <strong>${d.key}:</strong> ${d.value.toFixed(2)}
+    `);
       })
-      .on("mouseout", resetHighlight);
+      .on("mousemove", (event) => {
+        tooltip
+          .style("left", event.pageX + 10 + "px")
+          .style("top", event.pageY - 20 + "px");
+      })
+      .on("mouseout", function (event, d) {
+        resetHighlight();
+
+        // resset
+        d3.select(this).attr("stroke", "none");
+
+        tooltip.style("opacity", 0);
+      });
 
     // ===== AXIS X =====
     const gx = zoomLayer
@@ -387,6 +443,8 @@ d3.csv("a1-cars.csv").then((data) => {
       return d3.line()(dimensions.map((p) => [x(p), y[p](d[p])]));
     }
 
+    const tooltip = d3.select("#tooltip");
+
     g.selectAll("path")
       .data(data)
       .enter()
@@ -395,9 +453,39 @@ d3.csv("a1-cars.csv").then((data) => {
       .attr("d", path)
       .attr("fill", "none")
       .attr("stroke", (d) => color(d[target]))
-      .attr("opacity", 1)
-      .on("mouseover", (e, d) => highlightAll(d[target]))
-      .on("mouseout", resetHighlight);
+      .attr("opacity", 0.5)
+      .on("mouseover", function (event, d) {
+        highlightAll(d[target]);
+
+        const el = d3.select(this);
+
+        el.raise();
+
+        // delay để tránh override
+        setTimeout(() => {
+          el.attr("stroke", "red").attr("stroke-width", 2).attr("opacity", 1);
+        }, 0);
+
+        tooltip
+          .style("opacity", 1)
+          .html(dimensions.map((dim) => `${dim}: ${d[dim]}`).join("<br/>"));
+      })
+      .on("mousemove", (event) => {
+        tooltip
+          .style("left", event.pageX + 10 + "px")
+          .style("top", event.pageY - 20 + "px");
+      })
+      .on("mouseout", function (event, d) {
+        resetHighlight();
+
+        // rreset mau
+        d3.select(this)
+          .attr("stroke", color(d[target]))
+          .attr("stroke-width", 1.5)
+          .attr("opacity", 1);
+
+        tooltip.style("opacity", 0);
+      });
 
     dimensions.forEach((dim) => {
       g.append("g")
@@ -593,27 +681,27 @@ d3.csv("a1-cars.csv").then((data) => {
     );
   }
 
-  function highlightBarOnly(dHover) {
-    // BAR (chỉ 1 cột)
-    d3.selectAll(".bar-rect").attr("opacity", (d) =>
-      d.group === dHover.group && d.key === dHover.key ? 1 : 0.2,
-    );
+  // function highlightBarOnly(dHover) {
+  //   // BAR (chỉ 1 cột)
+  //   d3.selectAll(".bar-rect").attr("opacity", (d) =>
+  //     d.group === dHover.group && d.key === dHover.key ? 1 : 0.2,
+  //   );
 
-    // SCATTER (vẫn theo group)
-    d3.selectAll(".scatter-point").attr("opacity", (d) =>
-      d[target] === dHover.group ? 1 : 0.1,
-    );
+  //   // SCATTER (vẫn theo group)
+  //   d3.selectAll(".scatter-point").attr("opacity", (d) =>
+  //     d[target] === dHover.group ? 1 : 0.1,
+  //   );
 
-    // PARALLEL
-    d3.selectAll(".parallel-line").attr("opacity", (d) =>
-      d[target] === dHover.group ? 1 : 0.05,
-    );
+  //   // PARALLEL
+  //   d3.selectAll(".parallel-line").attr("opacity", (d) =>
+  //     d[target] === dHover.group ? 1 : 0.05,
+  //   );
 
-    // PIE
-    d3.selectAll(".pie-slice").attr("opacity", (d) =>
-      d.data[0] === dHover.group ? 1 : 0.2,
-    );
-  }
+  //   // PIE
+  //   d3.selectAll(".pie-slice").attr("opacity", (d) =>
+  //     d.data[0] === dHover.group ? 1 : 0.2,
+  //   );
+  // }
 
   function resetHighlight() {
     d3.selectAll(".scatter-point").attr("opacity", 0.7);
@@ -622,7 +710,7 @@ d3.csv("a1-cars.csv").then((data) => {
     d3.selectAll(".pie-slice").attr("opacity", 1);
   }
 
-  // ================= FULLSCREEN =================
+  // ================= FULL HD KHONG CHE =================
   d3.selectAll(".chart").on("click", function () {
     const isFull = d3.select(this).classed("fullscreen");
     d3.selectAll(".chart").classed("fullscreen", false);
