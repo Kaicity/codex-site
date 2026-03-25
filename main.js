@@ -77,10 +77,12 @@ d3.csv("a1-cars.csv").then((data) => {
 
   // ================= SCATTER =================
   function renderScatter() {
-    if (selectedDefaultAttrs.length < 2) return;
+    if (selectedDefaultAttrs.length < 2) return; // ko lm j
 
     const xAttr = selectedDefaultAttrs[1];
     const yAttr = selectedDefaultAttrs[0];
+    const sizeAttr = selectedDefaultAttrs[2]; // attr3
+    const shapeAttr = selectedDefaultAttrs[3]; //attr4
 
     const margin = { top: 20, right: 20, bottom: 40, left: 50 };
     const innerWidth = width - margin.left - margin.right;
@@ -91,7 +93,7 @@ d3.csv("a1-cars.csv").then((data) => {
       .append("svg")
       .attr("viewBox", `0 0 ${width} ${height}`);
 
-    // ===== CLIP PATH =====
+    // ===== CLIP =====
     svg
       .append("defs")
       .append("clipPath")
@@ -102,6 +104,7 @@ d3.csv("a1-cars.csv").then((data) => {
       .attr("width", innerWidth)
       .attr("height", innerHeight);
 
+    // ===== SCALE =====
     const x = d3
       .scaleLinear()
       .domain(d3.extent(data, (d) => d[xAttr]))
@@ -114,6 +117,45 @@ d3.csv("a1-cars.csv").then((data) => {
       .nice()
       .range([margin.top + innerHeight, margin.top]);
 
+    // attr 3
+    // *nếu ngta chọn thuộc tính thứ 3
+    // thì mấy chấm tròn sẽ scale theo giá trị(ví dụ weight = 100 thì viên tròn sẽ to còn weight = 1 thì viên tròn sẽ nhỏ)
+    let sizeScale = null;
+    if (sizeAttr) {
+      sizeScale = d3
+        .scaleSqrt()
+        .domain(d3.extent(data, (d) => d[sizeAttr]))
+        .range([30, 300]); // dùng cho symbol
+    }
+
+    //attr 4
+    let maxVal = null;
+    if (shapeAttr) {
+      maxVal = d3.max(data, (d) => d[shapeAttr]);
+    }
+
+    // * Nếu ngta chọn thêm thuộc tính thứ 4
+    // thì giá trị từ 0-24% so với maximun value sẽ là hình X
+    // từ 25%-50% so với max value sẽ là O
+    // từ 51%-75% so với max value sẽ là vuông
+    // từ 26%-100% so với max value sẽ là tam giác
+    function getShape(d) {
+      if (!shapeAttr) return d3.symbolCircle;
+
+      const ratio = d[shapeAttr] / maxVal;
+
+      if (ratio <= 0.24) return d3.symbolCross; // X
+      if (ratio <= 0.5) return d3.symbolCircle; // O
+      if (ratio <= 0.75) return d3.symbolSquare; // vuong
+
+      return d3.symbolTriangle; // tam giac
+    }
+
+    function getSize(d) {
+      if (!sizeAttr) return 80;
+      return sizeScale(d[sizeAttr]);
+    }
+
     // ===== AXIS =====
     const gx = svg
       .append("g")
@@ -125,45 +167,51 @@ d3.csv("a1-cars.csv").then((data) => {
       .attr("transform", `translate(${margin.left}, 0)`)
       .call(d3.axisLeft(y));
 
-    // ===== GROUP (CLIPPED) =====
     const g = svg.append("g").attr("clip-path", "url(#clip)");
-
     const tooltip = d3.select("#tooltip");
 
-    const circles = g
-      .selectAll("circle")
+    // ===== DRAW POINTS =====
+    const points = g
+      .selectAll("path")
       .data(data)
       .enter()
-      .append("circle")
+      .append("path")
       .attr("class", "scatter-point")
-      .attr("cx", (d) => x(d[xAttr]))
-      .attr("cy", (d) => y(d[yAttr]))
-      .attr("r", 5)
+      .attr("transform", (d) => `translate(${x(d[xAttr])}, ${y(d[yAttr])})`)
+      .attr(
+        "d",
+        d3
+          .symbol()
+          .type((d) => getShape(d))
+          .size((d) => getSize(d)),
+      )
       .attr("fill", (d) => color(d[target]))
       .attr("opacity", 0.7)
+
+      // ===== HOVER =====
       .on("mouseover", function (event, d) {
         highlightAll(d[target]);
 
         const el = d3.select(this);
-
         el.raise();
 
-        // delay để tránh override
-        setTimeout(() => {
-          el.attr("fill", "red").attr("stroke", "#000").attr("stroke-width", 2);
-        }, 0);
+        el.attr("fill", "red").attr("stroke", "#000").attr("stroke-width", 2);
 
         tooltip.style("opacity", 1).html(`
-    <strong>${target}:</strong> ${d[target]} <br/>
-    ${xAttr}: ${d[xAttr]} <br/>
-    ${yAttr}: ${d[yAttr]}
-  `);
+        <strong>${target}:</strong> ${d[target]} <br/>
+        ${xAttr}: ${d[xAttr]} <br/>
+        ${yAttr}: ${d[yAttr]} <br/>
+        ${sizeAttr ? `${sizeAttr}: ${d[sizeAttr]} <br/>` : ""}
+        ${shapeAttr ? `${shapeAttr}: ${d[shapeAttr]}` : ""}
+      `);
       })
+
       .on("mousemove", (event) => {
         tooltip
           .style("left", event.pageX + 10 + "px")
           .style("top", event.pageY - 20 + "px");
       })
+
       .on("mouseout", function (event, d) {
         resetHighlight();
 
@@ -200,7 +248,10 @@ d3.csv("a1-cars.csv").then((data) => {
         const zx = event.transform.rescaleX(x);
         const zy = event.transform.rescaleY(y);
 
-        circles.attr("cx", (d) => zx(d[xAttr])).attr("cy", (d) => zy(d[yAttr]));
+        points.attr(
+          "transform",
+          (d) => `translate(${zx(d[xAttr])}, ${zy(d[yAttr])})`,
+        );
 
         gx.call(d3.axisBottom(zx));
         gy.call(d3.axisLeft(zy));
@@ -483,6 +534,10 @@ d3.csv("a1-cars.csv").then((data) => {
           .attr("stroke", color(d[target]))
           .attr("stroke-width", 1.5)
           .attr("opacity", 1);
+
+        setTimeout(() => {
+          el.attr("stroke", "red").attr("stroke-width", 2).attr("opacity", 1);
+        }, 0);
 
         tooltip.style("opacity", 0);
       });
