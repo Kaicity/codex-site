@@ -10,36 +10,52 @@
   <body>
     <h2>Cars Data Visualization</h2>
 
-    <div class="controls">
-      <div>
-        <h4>Attributes</h4>
-        <div class="panel attributes">
-          <div class="attr-item" data-value="MPG">
-            MPG <span class="order"></span>
+    <div class="container-control">
+      <div class="controls">
+        <div>
+          <h4>Attributes</h4>
+          <div class="panel attributes">
+            <div class="attr-item" data-value="MPG">
+              MPG <span class="order"></span>
+            </div>
+            <div class="attr-item" data-value="Horsepower">
+              Horsepower <span class="order"></span>
+            </div>
+            <div class="attr-item" data-value="Weight">
+              Weight <span class="order"></span>
+            </div>
+            <div class="attr-item" data-value="Acceleration">
+              Acceleration <span class="order"></span>
+            </div>
           </div>
-          <div class="attr-item" data-value="Horsepower">
-            Horsepower <span class="order"></span>
-          </div>
-          <div class="attr-item" data-value="Weight">
-            Weight <span class="order"></span>
-          </div>
-          <div class="attr-item" data-value="Acceleration">
-            Acceleration <span class="order"></span>
+        </div>
+
+        <div>
+          <h4>Target</h4>
+          <div class="panel">
+            <label
+              ><input type="radio" name="target" value="Manufacturer" checked />
+              Manufacturer</label
+            >
+            <label
+              ><input type="radio" name="target" value="Origin" /> Origin</label
+            >
           </div>
         </div>
       </div>
 
-      <div>
-        <h4>Target</h4>
-        <div class="panel">
-          <label
-            ><input type="radio" name="target" value="Manufacturer" checked />
-            Manufacturer</label
-          >
-          <label
-            ><input type="radio" name="target" value="Origin" /> Origin</label
-          >
-        </div>
+      <div class="note">
+        <p>
+          <b>Size of circle:</b> represents the value of the 3rd selected
+          attribute
+        </p>
+        <p><b>Shape (based on 4th attribute):</b></p>
+        <ul>
+          <li>✖ &lt; 25% of maximum value</li>
+          <li>● 25% – 50%</li>
+          <li>■ 51% – 75%</li>
+          <li>▲ 76% – 100%</li>
+        </ul>
       </div>
     </div>
 

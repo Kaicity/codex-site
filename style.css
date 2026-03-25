@@ -132,3 +132,21 @@ h2 {
   font-weight: bold;
   margin-left: 5px;
 }
+
+.note {
+  font-size: 13px;
+}
+
+.note ul {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  padding: 0;
+  list-style: none;
+}
+
+.container-control {
+  display: flex;
+  align-items: center;
+  gap: 260px;
+}
